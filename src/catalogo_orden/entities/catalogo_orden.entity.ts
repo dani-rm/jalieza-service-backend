@@ -9,8 +9,8 @@ export class CatalogoOrden {
   @Column({ nullable: false })
   order_name: string;
 
-  @Column({ nullable: false })
-  required_points: number;
+ /*  @Column({ nullable: false })
+  required_points: number; */
 
   @OneToMany(() => CatalogoServicio, servicio => servicio.order, {
     cascade: true,

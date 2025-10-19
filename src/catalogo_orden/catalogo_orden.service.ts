@@ -21,7 +21,7 @@ export class CatalogoOrdenService {
   // Obtener todas las órdenes con sus servicios
   async findAll() {
     return await this.catalogoOrdenRepository.find({
-      order: { required_points: 'ASC' },
+      /* order: { required_points: 'ASC' }, */
       relations: ['services'],
     });
   }

@@ -38,6 +38,10 @@ export class Ciudadanos {
   @Column({ type: 'int', nullable: false })
   marital_status: MaritalStatus;
 
+  // ✅ NUEVO: Campo simple para control de órdenes
+  @Column({ type: 'integer', default: 1 })
+  max_orden_desbloqueada: number; // Solo guardamos hasta qué orden puede acceder
+
   @ManyToOne(() => Ciudadanos, (citizen) => citizen.partners, {
     nullable: true,
   })

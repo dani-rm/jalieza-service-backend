@@ -14,33 +14,33 @@ export class SeedingService implements OnModuleInit {
   private readonly ORDENES_CONFIG = {
     1: { 
       name: 'PRIMER ORDEN', 
-      required_points: 0, 
-      puntos_por_servicio: 10 
+/*       required_points: 0, 
+      puntos_por_servicio: 10  */
     },
     2: { 
       name: 'SEGUNDO ORDEN', 
-      required_points: 20, 
-      puntos_por_servicio: 10 
+/*       required_points: 20, 
+      puntos_por_servicio: 10  */
     },
     3: { 
       name: 'TERCER ORDEN', 
-      required_points: 40, 
-      puntos_por_servicio: 10 
+/*       required_points: 40, 
+      puntos_por_servicio: 10  */
     },
     4: { 
       name: 'CUARTO ORDEN', 
-      required_points: 60, 
-      puntos_por_servicio: 10
+ /*      required_points: 60, 
+      puntos_por_servicio: 10 */
     },
     5: { 
       name: 'QUINTO ORDEN', 
-      required_points: 80, 
-      puntos_por_servicio: 10 
+/*       required_points: 80, 
+      puntos_por_servicio: 10  */
     },
     6: { 
       name: 'SEXTO ORDEN', 
-      required_points: 100, 
-      puntos_por_servicio: 10 
+/*       required_points: 100, 
+      puntos_por_servicio: 10  */
     }
   };
   
@@ -179,10 +179,10 @@ export class SeedingService implements OnModuleInit {
       if (!existingOrder) {
         const order = this.catalogoOrdenRepository.create({
           order_name: config.name,
-          required_points: config.required_points
+          /* required_points: config.required_points */
         });
         await this.catalogoOrdenRepository.save(order);
-        this.logger.log(`   ✅ Orden creada: ${config.name} (${config.required_points} puntos requeridos)`);
+        this.logger.log(`   ✅ Orden creada: ${config.name}` /* (${config.required_points} puntos requeridos) */);
       } else {
         this.logger.log(`   ⏭️  Orden ya existe: ${config.name}`);
       }

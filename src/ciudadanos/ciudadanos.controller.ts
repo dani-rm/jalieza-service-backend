@@ -48,15 +48,35 @@ export class CiudadanosController {
     return this.ciudadanosService.findOne(+id);
   }
 
-  @Get(':id/ordenes-disponibles')
-  getOrdenesDisponibles(@Param('id') id: string) {
-    return this.ciudadanosService.getOrdenesDisponibles(+id);
+  // ✅ NUEVO: Promover ciudadano a siguiente orden
+  @Patch(':id/promover-orden')
+  // @UseGuards(AuthGuard)
+  promoverOrden(@Param('id') id: string) {
+    return this.ciudadanosService.promoverOrden(+id);
   }
 
-  @Get(':id/puntos')
+  // ✅ NUEVO: Retroceder ciudadano a orden anterior
+  @Patch(':id/retroceder-orden')
+  // @UseGuards(AuthGuard)
+  retrocederOrden(@Param('id') id: string) {
+    return this.ciudadanosService.retrocederOrden(+id);
+  }
+
+  // ✅ MODIFICADO: Simplificar órdenes disponibles
+  @Get(':id/ordenes-disponibles')
+  getOrdenesDisponibles(@Param('id') id: string) {
+    return this.ciudadanosService.getOrdenesDisponiblesSimple(+id);
+  }
+
+ /*  @Get(':id/ordenes-disponibles')
+  getOrdenesDisponibles(@Param('id') id: string) {
+    return this.ciudadanosService.getOrdenesDisponibles(+id);
+  } */
+
+ /*  @Get(':id/puntos')
   getPuntosCiudadano(@Param('id') id: string) {
     return this.ciudadanosService.getPuntosCiudadano(+id);
-  }
+  } */
 
   @Patch(':id')
   update(

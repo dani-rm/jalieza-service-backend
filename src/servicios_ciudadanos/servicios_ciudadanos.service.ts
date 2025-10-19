@@ -11,7 +11,7 @@ import { Repository } from 'typeorm';
 import { ServiciosCiudadano } from './entities/servicios_ciudadano.entity';
 import { Ciudadanos } from 'src/ciudadanos/entities/ciudadano.entity';
 import { CatalogoServicio } from 'src/catalogo_servicios/entities/catalogo_servicio.entity';
-import { PointsManagementService } from 'src/ciudadanos/services/points-management.service';
+//import { PointsManagementService } from 'src/ciudadanos/services/points-management.service';
 import { ServiceStatus } from './enums/service-status.enum';
 
 @Injectable()
@@ -26,7 +26,7 @@ export class ServiciosCiudadanosService {
     @InjectRepository(CatalogoServicio)
     private readonly catalogoServicioRepository: Repository<CatalogoServicio>,
 
-    private readonly pointsManagementService: PointsManagementService,
+    /* private readonly pointsManagementService: PointsManagementService, */
   ) {}
 
 // ✅ CREAR NUEVO SERVICIO
@@ -41,8 +41,9 @@ async create(createDto: CreateServiciosCiudadanoDto) {
     );
   }
 
-  const catalogo = await this.catalogoServicioRepository.findOneBy({
-    id: createDto.service_id,
+  const catalogo = await this.catalogoServicioRepository.findOne({
+    where: { id: createDto.service_id },
+    relations: ['order'],
   });
 
   if (!catalogo) {
@@ -51,12 +52,19 @@ async create(createDto: CreateServiciosCiudadanoDto) {
     );
   }
 
-  const canAccessOrden = await this.pointsManagementService.canAccessOrden(createDto.ciudadano_id, catalogo.order.id);
+  // ✅ NUEVO: Validación simple basada en max_orden_desbloqueada
+    if (catalogo.order && catalogo.order.id > ciudadano.max_orden_desbloqueada) {
+      throw new BadRequestException(
+        `El ciudadano no puede acceder a este servicio. Orden requerida: ${catalogo.order.id}, Orden disponible: ${ciudadano.max_orden_desbloqueada}`
+      );
+    }
+
+  /* const canAccessOrden = await this.pointsManagementService.canAccessOrden(createDto.ciudadano_id, catalogo.order.id);
   if (!canAccessOrden) {
     throw new BadRequestException(
       `El ciudadano no puede acceder a este servicio`,
     );
-  }
+  } */
 
   // 🚨 VALIDACIÓN para impedir más de un cargo "EnCurso"
   if (createDto.service_status === ServiceStatus.in_progress) {

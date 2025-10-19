@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ciudadanos } from '../entities/ciudadano.entity';
@@ -9,7 +9,77 @@ export class MaritalStatusService {
   constructor(
     @InjectRepository(Ciudadanos)
     private readonly ciudadanosRepository: Repository<Ciudadanos>,
-  ) {}
+  ) { }
+  
+  async updateMaritalStatus(
+    ciudadanoId: number,
+    newMaritalStatus: MaritalStatus,
+    partnerId?: number,
+  ) {
+    const ciudadano = await this.ciudadanosRepository.findOne({
+      where: { id: ciudadanoId },
+      relations: ['partner'],
+    });
+
+    if (!ciudadano) {
+      throw new NotFoundException('Ciudadano no encontrado');
+    }
+
+    const currentPartner = ciudadano.partner;
+
+    // ✅ NUEVO: Manejar divorcio - ya no sincronizar órdenes
+    if (newMaritalStatus === MaritalStatus.SOLTERO && currentPartner) {
+      // Divorciar ambos ciudadanos
+      currentPartner.marital_status = MaritalStatus.SOLTERO;
+      currentPartner.partner = null;
+      await this.ciudadanosRepository.save(currentPartner);
+
+      // ✅ Importante: Al divorciarse, cada uno conserva su orden actual
+      // NO hay sincronización hacia atrás
+    }
+
+    // ✅ NUEVO: Manejar matrimonio - sincronizar órdenes
+    if (newMaritalStatus === MaritalStatus.CASADO && partnerId) {
+      const partner = await this.ciudadanosRepository.findOne({
+        where: { id: partnerId },
+      });
+
+      if (!partner) {
+        throw new NotFoundException('Pareja no encontrada');
+      }
+
+      // Sincronizar órdenes - ambos toman la orden más alta
+      const maxOrden = Math.max(
+        ciudadano.max_orden_desbloqueada,
+        partner.max_orden_desbloqueada
+      );
+
+      ciudadano.max_orden_desbloqueada = maxOrden;
+      partner.max_orden_desbloqueada = maxOrden;
+
+      // Establecer matrimonio
+      ciudadano.marital_status = MaritalStatus.CASADO;
+      ciudadano.partner = partner;
+      partner.marital_status = MaritalStatus.CASADO;
+      partner.partner = ciudadano;
+
+      await this.ciudadanosRepository.save([ciudadano, partner]);
+    } else {
+      // Solo actualizar estado civil sin pareja
+      ciudadano.marital_status = newMaritalStatus;
+      ciudadano.partner = null;
+      await this.ciudadanosRepository.save(ciudadano);
+    }
+
+    return {
+      message: 'Estado civil actualizado exitosamente',
+      data: {
+        ciudadano_id: ciudadano.id,
+        nuevo_estado: newMaritalStatus,
+        pareja_id: partnerId || null,
+      },
+    };
+  }
 
   /**
    * Maneja el cambio de estado civil de un ciudadano

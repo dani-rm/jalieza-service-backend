@@ -14,7 +14,8 @@ import { MaritalStatus } from './enums/marital-status.enum';
 import { CiudadanoResponse, CiudadanoListResponse, CiudadanoCreateResponse,CiudadanoUpdateResponse } from './interfaces/ciudadano-response.interface';
 import { calculateAge, formatDateOnly, validateBirthDate } from './utils/date-validator.util';
 import { MaritalStatusService } from './services/marital-status.service';
-import { PointsManagementService } from './services/points-management.service';
+import { CatalogoOrden } from 'src/catalogo_orden/entities/catalogo_orden.entity';
+/* import { PointsManagementService } from './services/points-management.service'; */
 
 
 @Injectable()
@@ -23,7 +24,9 @@ export class CiudadanosService {
     @InjectRepository(Ciudadanos)
     private readonly ciudadanosRepository: Repository<Ciudadanos>,
     private readonly maritalStatusService: MaritalStatusService,
-    private readonly pointsManagementService: PointsManagementService,
+    @InjectRepository(CatalogoOrden)
+    private readonly catalogoOrdenRepository: Repository<CatalogoOrden>
+    /* private readonly pointsManagementService: PointsManagementService, */
   ) {}
 
   //Valida si el ciudadano ya existe
@@ -266,18 +269,117 @@ export class CiudadanosService {
     return await this.ciudadanosRepository.softRemove(ciudadano);
   }
   
+  // ✅ NUEVO: Promover ciudadano a siguiente orden
+  async promoverOrden(ciudadanoId: number) {
+    const ciudadano = await this.ciudadanosRepository.findOne({
+      where: { id: ciudadanoId },
+      relations: ['partner'],
+    });
+
+    if (!ciudadano) {
+      throw new NotFoundException('Ciudadano no encontrado');
+    }
+
+    // Validar que no exceda el máximo
+    if (ciudadano.max_orden_desbloqueada >= 6) {
+      throw new BadRequestException('El ciudadano ya tiene la máxima orden desbloqueada');
+    }
+
+    // Promover ciudadano
+    ciudadano.max_orden_desbloqueada += 1;
+    await this.ciudadanosRepository.save(ciudadano);
+
+    // ✅ Si está casado, promover también a la pareja
+    if (ciudadano.marital_status === MaritalStatus.CASADO && ciudadano.partner) {
+      ciudadano.partner.max_orden_desbloqueada = ciudadano.max_orden_desbloqueada;
+      await this.ciudadanosRepository.save(ciudadano.partner);
+    }
+
+    return {
+      message: 'Orden desbloqueada exitosamente',
+      data: {
+        ciudadano_id: ciudadano.id,
+        nueva_orden_maxima: ciudadano.max_orden_desbloqueada,
+        pareja_actualizada: ciudadano.partner ? true : false,
+      },
+    };
+  }
+
+  // ✅ NUEVO: Retroceder ciudadano a orden anterior
+  async retrocederOrden(ciudadanoId: number) {
+    const ciudadano = await this.ciudadanosRepository.findOne({
+      where: { id: ciudadanoId },
+      relations: ['partner'],
+    });
+
+    if (!ciudadano) {
+      throw new NotFoundException('Ciudadano no encontrado');
+    }
+
+    // Validar que no baje del mínimo
+    if (ciudadano.max_orden_desbloqueada <= 1) {
+      throw new BadRequestException('El ciudadano ya tiene la mínima orden');
+    }
+
+    // Retroceder ciudadano
+    ciudadano.max_orden_desbloqueada -= 1;
+    await this.ciudadanosRepository.save(ciudadano);
+
+    // ✅ Si está casado, retroceder también a la pareja
+    if (ciudadano.marital_status === MaritalStatus.CASADO && ciudadano.partner) {
+      ciudadano.partner.max_orden_desbloqueada = ciudadano.max_orden_desbloqueada;
+      await this.ciudadanosRepository.save(ciudadano.partner);
+    }
+
+    return {
+      message: 'Orden bloqueada exitosamente',
+      data: {
+        ciudadano_id: ciudadano.id,
+        nueva_orden_maxima: ciudadano.max_orden_desbloqueada,
+        pareja_actualizada: ciudadano.partner ? true : false,
+      },
+    };
+  }
+
+  // ✅ NUEVO: Método simple para obtener órdenes disponibles
+  async getOrdenesDisponiblesSimple(ciudadanoId: number) {
+    const ciudadano = await this.ciudadanosRepository.findOne({
+      where: { id: ciudadanoId },
+    });
+
+    if (!ciudadano) {
+      throw new NotFoundException('Ciudadano no encontrado');
+    }
+
+    // Obtener todas las órdenes del catálogo
+    const todasLasOrdenes = await this.catalogoOrdenRepository.find({
+      order: { id: 'ASC' },
+    });
+
+    // Filtrar solo las que puede acceder
+    const ordenesDisponibles = todasLasOrdenes.filter(
+      orden => orden.id <= ciudadano.max_orden_desbloqueada
+    );
+
+    return {
+      ciudadano_id: ciudadano.id,
+      max_orden_desbloqueada: ciudadano.max_orden_desbloqueada,
+      ordenes_disponibles: ordenesDisponibles,
+    };
+  }
+
   //Restaura un ciudadano
   /* async restaurarCiudadano(id: number) {
     return await this.ciudadanosRepository.restore(id);
   } */ 
 
   // Obtener órdenes disponibles para un ciudadano ----------------------------------------------------------------------------------
-  async getOrdenesDisponibles(ciudadanoId: number) {
+/*   async getOrdenesDisponibles(ciudadanoId: number) {
     return await this.pointsManagementService.getOrdenesDisponibles(ciudadanoId);
   }
-
+ */
   // Obtener puntos de un ciudadano (INCLUYE puntos de la pareja si está casado)
-  async getPuntosCiudadano(ciudadanoId: number) {
+  /* async getPuntosCiudadano(ciudadanoId: number) {
     const [puntos, totalPuntos, ciudadano] = await Promise.all([
       this.pointsManagementService.getPuntosByCiudadano(ciudadanoId),
       this.pointsManagementService.getTotalPuntos(ciudadanoId),
@@ -305,7 +407,7 @@ export class CiudadanosService {
     };
 
     return response;
-  }
+  } */
 
   //HELPERS DE MAPEADO
   /**
