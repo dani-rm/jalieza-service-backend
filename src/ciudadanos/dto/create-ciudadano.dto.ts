@@ -8,18 +8,19 @@ import {
   IsEnum,
 } from 'class-validator';
 import { MaritalStatus } from '../enums/marital-status.enum';
+import { NameTransform } from '../../common/name.transform';
 
 export class CreateCiudadanoDto {
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   name: string;
 
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()  
   @IsString()
   last_name_father: string;
 
   @IsOptional()
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   last_name_mother?: string | null;
 

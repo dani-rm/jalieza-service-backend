@@ -1,16 +1,17 @@
 import { Transform } from 'class-transformer';
 import { IsString } from 'class-validator';
+import { NameTransform } from '../../common/name.transform';
 
 export class CheckDuplicateCiudadanoDto {
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   name: string;
 
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   last_name_father: string;
 
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   last_name_mother?: string;
 }
