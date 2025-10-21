@@ -85,12 +85,12 @@ async create(createDto: CreateServiciosCiudadanoDto) {
   // ⚙️ Cálculo del periodo de descanso
   const startDate = new Date(createDto.start_date);
   const endDate = new Date(createDto.end_date);
-  let restPeriodEnd: Date | null = null;
+  /* let restPeriodEnd: Date | null = null;
 
   if (createDto.service_status === ServiceStatus.completed) {
     restPeriodEnd = new Date(endDate);
     restPeriodEnd.setFullYear(restPeriodEnd.getFullYear() + 2); // +2 años
-  }
+  } */
 
   const nuevoServicio = this.serviciosRepository.create({
     citizen: ciudadano,
@@ -99,7 +99,7 @@ async create(createDto: CreateServiciosCiudadanoDto) {
     end_date: endDate,
     service_status: createDto.service_status,
     observations: createDto.observations || '',
-    rest_period_end: restPeriodEnd,
+    /* rest_period_end: restPeriodEnd, */
   });
 
 
@@ -180,14 +180,14 @@ async create(createDto: CreateServiciosCiudadanoDto) {
   cargo.observations = updateDto.observations ?? cargo.observations;
 
   // 🚀 Lógica para calcular rest_period_end
-  if (nuevoStatus === ServiceStatus.completed && cargo.end_date) {
+  /* if (nuevoStatus === ServiceStatus.completed && cargo.end_date) {
     const finDescanso = new Date(cargo.end_date);
     finDescanso.setFullYear(finDescanso.getFullYear() + 2);
     cargo.rest_period_end = finDescanso;
   } else {
     // Si cambia a otro status, anulamos el descanso
     cargo.rest_period_end = null;
-  }
+  } */
 
     
   await this.serviciosRepository.save(cargo);

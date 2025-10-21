@@ -22,13 +22,15 @@ export class ServiciosCiudadano {
   citizen: Ciudadanos;
 
   @ManyToOne(() => CatalogoServicio, { eager: true }) // Puedes poner eager: true o false
-@JoinColumn({ name: 'service_id' }) // 👈 Usa el mismo nombre que el campo existente
-catalogoServicio: CatalogoServicio;
+    
+  @JoinColumn({ name: 'service_id' }) // 👈 Usa el mismo nombre que el campo existente
+  catalogoServicio: CatalogoServicio;
 
   @Column({ nullable: true })
   start_date: Date;
-@Column({ type: 'date', nullable: true })
-rest_period_end: Date; // o descanso_termina_en si prefieres en español
+
+  /* @Column({ type: 'date', nullable: true })
+  rest_period_end: Date; // o descanso_termina_en si prefieres en español */
 
   @Column({ nullable: true })
   end_date: Date;
