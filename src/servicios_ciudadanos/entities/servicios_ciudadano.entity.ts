@@ -8,6 +8,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   UpdateDateColumn,
   PrimaryGeneratedColumn,
 } from "typeorm";
@@ -45,6 +46,11 @@ export class ServiciosCiudadano {
 
   @Column({ nullable: true })
   observations: string;
+
+  // Enlace opcional a un servicio "pareado" (por matrimonio)
+  @OneToOne(() => ServiciosCiudadano, { nullable: true })
+  @JoinColumn({ name: 'paired_service_id' })
+  pairedWith?: ServiciosCiudadano | null;
 
   @CreateDateColumn()
   created_at: Date;
