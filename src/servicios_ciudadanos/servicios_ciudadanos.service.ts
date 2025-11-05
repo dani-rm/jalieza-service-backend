@@ -85,9 +85,9 @@ async create(createDto: CreateServiciosCiudadanoDto) {
     }
   }
 
-  // ⚙️ Cálculo del periodo de descanso
-  const startDate = new Date(createDto.start_date);
-  const endDate = new Date(createDto.end_date);
+  // ⚙️ Conversión correcta de fechas (evitar problema de zona horaria)
+  const startDate = this.parseDate(createDto.start_date);
+  const endDate = createDto.end_date ? this.parseDate(createDto.end_date) : null;
   /* let restPeriodEnd: Date | null = null;
 
   if (createDto.service_status === ServiceStatus.completed) {
@@ -207,11 +207,11 @@ async create(createDto: CreateServiciosCiudadanoDto) {
 
   // Actualiza campos básicos
   cargo.start_date = updateDto.start_date
-    ? new Date(updateDto.start_date)
+    ? this.parseDate(updateDto.start_date)
     : cargo.start_date;
 
   cargo.end_date = updateDto.end_date
-    ? new Date(updateDto.end_date)
+    ? this.parseDate(updateDto.end_date)
     : cargo.end_date;
 
   const nuevoStatus = updateDto.service_status ?? cargo.service_status;
@@ -219,7 +219,7 @@ async create(createDto: CreateServiciosCiudadanoDto) {
   
   // VALIDACIÓN: Si se cambia a "completado", la fecha de finalización es obligatoria
   if (nuevoStatus === ServiceStatus.completed && statusAnterior !== ServiceStatus.completed) {
-    const fechaFinalizacion = updateDto.end_date ? new Date(updateDto.end_date) : cargo.end_date;
+    const fechaFinalizacion = updateDto.end_date ? this.parseDate(updateDto.end_date) : cargo.end_date;
     
     if (!fechaFinalizacion) {
       throw new BadRequestException(
@@ -281,10 +281,10 @@ async create(createDto: CreateServiciosCiudadanoDto) {
         contraparte.service_status = nuevoStatus;
 
         if (updateDto.start_date) {
-          contraparte.start_date = new Date(updateDto.start_date);
+          contraparte.start_date = this.parseDate(updateDto.start_date);
         }
         if (updateDto.end_date) {
-          contraparte.end_date = new Date(updateDto.end_date);
+          contraparte.end_date = this.parseDate(updateDto.end_date);
         } else if (nuevoStatus === ServiceStatus.completed) {
           // Si completamos y no vino end_date, alinear con el actual
           contraparte.end_date = cargo.end_date ?? contraparte.end_date;
@@ -328,5 +328,22 @@ async create(createDto: CreateServiciosCiudadanoDto) {
     }
 
     return ciudadano.services;
+  }
+
+  /**
+   * Helper para convertir string de fecha sin problemas de zona horaria
+   * Convierte "2024-11-23" a Date manteniendo exactamente esa fecha
+   */
+  private parseDate(dateString: string): Date {
+    if (!dateString) return null;
+    
+    // Si viene con hora (ISO completo), usar directamente
+    if (dateString.includes('T')) {
+      return new Date(dateString);
+    }
+    
+    // Si es solo fecha (YYYY-MM-DD), construir Date en hora local
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11
   }
 }
