@@ -10,11 +10,6 @@ export const validateBirthDate = (birthDate: Date): Date => {
     throw new BadRequestException('Fecha de nacimiento inválida');
   }
 
-  // ✅ CORRECCIÓN IMPORTANTE: Ajuste para desfase de zona horaria
-  localDate.setMinutes(
-    localDate.getMinutes() + localDate.getTimezoneOffset(),
-  );
-
   // Validar que no sea una fecha futura
   if (localDate > new Date()) {
     throw new BadRequestException('La fecha de nacimiento no puede ser futura');
@@ -43,19 +38,22 @@ export const formatDateOnly = (date: Date | string | null): string | null => {
   if (!date) return null;
 
   // Convertir string a Date si es necesario
-  let dateObj: Date;
   if (typeof date === 'string') {
-    dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      return null;
+    // Si ya viene en formato YYYY-MM-DD, devolverlo tal cual para evitar desfases
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
     }
-  } else {
-    dateObj = date;
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
   }
 
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 };
@@ -69,10 +67,13 @@ export const calculateAge = (
   // Convertir string a Date si es necesario
   let birth: Date;
   if (typeof birthDate === 'string') {
-    birth = new Date(birthDate);
-    if (isNaN(birth.getTime())) {
-      return null; // Fecha inválida
+    if (/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+      const [y, m, d] = birthDate.split('-').map(Number);
+      birth = new Date(y, m - 1, d);
+    } else {
+      birth = new Date(birthDate);
     }
+    if (isNaN(birth.getTime())) return null;
   } else {
     birth = birthDate;
   }

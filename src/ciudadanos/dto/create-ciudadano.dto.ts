@@ -1,12 +1,5 @@
-import { Transform, Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsDate,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsEnum,
-} from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
 import { MaritalStatus } from '../enums/marital-status.enum';
 import { NameTransform } from '../../common/name.transform';
 
@@ -29,15 +22,16 @@ export class CreateCiudadanoDto {
   @IsString()
   comment?: string | null;
 
+  // Mantener el DTO como string (YYYY-MM-DD) para evitar problemas de zona horaria
+  // y parsear en el servicio como se hace en servicios_ciudadanos
   @Transform(({ value }) => {
-    if (!value || value === '') return undefined; // permite vacío
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? undefined : date; // si no es fecha válida, undefined también
+    // Si es string vacío, null o undefined, retornar null
+    if (!value || value === '') return null;
+    return value;
   })
-  @Type(() => Date)
   @IsOptional()
-  @IsDate()
-  birth_date?: Date | null;
+  @IsDateString()
+  birth_date?: string | null;
   @IsOptional()
   @Transform(({ value }) => value?.trim?.())
   @IsString()

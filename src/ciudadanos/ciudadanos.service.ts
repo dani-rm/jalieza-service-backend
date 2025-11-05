@@ -129,8 +129,10 @@ export class CiudadanosService {
 
     if (birth_date) {
       try {
+        // Parsear la fecha correctamente sin problemas de zona horaria
+        const parsedDate = this.parseDate(birth_date);
         // Usar la función de validación que incluye límites de edad
-        localDate = validateBirthDate(new Date(birth_date));
+        localDate = validateBirthDate(parsedDate);
       } catch (error) {
         // Si la validación falla, lanzar el error
         throw error;
@@ -223,6 +225,16 @@ export class CiudadanosService {
 
     // Actualizar otros campos
     Object.assign(ciudadano, otherFields);
+
+    // Si se actualiza birth_date, parsearlo correctamente
+    if (updateCiudadanoDto.birth_date) {
+      try {
+        const parsedDate = this.parseDate(updateCiudadanoDto.birth_date);
+        ciudadano.birth_date = validateBirthDate(parsedDate);
+      } catch (error) {
+        throw error;
+      }
+    }
 
     const saved = await this.ciudadanosRepository.save(ciudadano);
 
@@ -491,5 +503,30 @@ export class CiudadanosService {
         deleted_at: ciudadano.deleted_at,
       }),
     };
+  }
+
+  /**
+   * Helper para convertir string de fecha sin problemas de zona horaria
+   * Convierte "2024-11-23" a Date manteniendo exactamente esa fecha
+   */
+  private parseDate(dateInput: string | Date): Date {
+    if (!dateInput) return null;
+    
+    // Si ya es Date, extraer componentes y reconstruir en hora local
+    if (dateInput instanceof Date) {
+      const year = dateInput.getFullYear();
+      const month = dateInput.getMonth();
+      const day = dateInput.getDate();
+      return new Date(year, month, day);
+    }
+    
+    // Si es string con hora (ISO completo), usar directamente
+    if (dateInput.includes('T')) {
+      return new Date(dateInput);
+    }
+    
+    // Si es solo fecha (YYYY-MM-DD), construir Date en hora local
+    const [year, month, day] = dateInput.split('-').map(Number);
+    return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11
   }
 }
