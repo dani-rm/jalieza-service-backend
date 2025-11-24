@@ -3,12 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ciudadanos } from '../entities/ciudadano.entity';
 import { MaritalStatus } from '../enums/marital-status.enum';
+import { ServiciosCiudadano } from 'src/servicios_ciudadanos/entities/servicios_ciudadano.entity';
+import { ServiceStatus } from 'src/servicios_ciudadanos/enums/service-status.enum';
 
 @Injectable()
 export class MaritalStatusService {
   constructor(
     @InjectRepository(Ciudadanos)
     private readonly ciudadanosRepository: Repository<Ciudadanos>,
+    @InjectRepository(ServiciosCiudadano)
+    private readonly serviciosRepository: Repository<ServiciosCiudadano>,
   ) { }
   
   async updateMaritalStatus(
@@ -179,6 +183,11 @@ export class MaritalStatusService {
   private async handleMarriedToSingle(ciudadano: Ciudadanos): Promise<void> {
     const currentPartner = ciudadano.partner;
 
+    // NUEVO: Desenlazar servicios "en_curso" pareados antes de separarse
+    if (currentPartner) {
+      await this.unlinkPairedServices(ciudadano.id, currentPartner.id);
+    }
+
     // Remover la relación del ciudadano actual
     ciudadano.marital_status = MaritalStatus.SOLTERO;
     ciudadano.partner = null;
@@ -337,6 +346,41 @@ export class MaritalStatusService {
 
     if (newMaritalStatus === MaritalStatus.CASADO && !newPartnerId) {
       throw new BadRequestException('Una persona casada debe tener pareja');
+    }
+  }
+
+  /**
+   * Desenlaza servicios pareados "en_curso" cuando una pareja se separa
+   * 
+   * Lógica simple: 
+   * - El que tiene pairedWith = es la copia → se elimina
+   * - El que NO tiene pairedWith = es el original → se conserva y se desenlaza
+   */
+  private async unlinkPairedServices(
+    ciudadanoId: number,
+    parejaId: number,
+  ): Promise<void> {
+    // Buscar servicios "en_curso" de ambos con pairedWith
+    const servicios = await this.serviciosRepository.find({
+      where: [
+        { citizen: { id: ciudadanoId }, service_status: ServiceStatus.in_progress },
+        { citizen: { id: parejaId }, service_status: ServiceStatus.in_progress },
+      ],
+      relations: ['pairedWith'],
+    });
+
+    for (const servicio of servicios) {
+      if (servicio.pairedWith) {
+        // Este es el pareado (copia) → eliminar
+        await this.serviciosRepository.softRemove(servicio);
+      } else {
+        // Este es el original → solo desenlazar si tiene pareja
+        const pareado = servicios.find(s => s.pairedWith?.id === servicio.id);
+        if (pareado) {
+          servicio.pairedWith = null;
+          await this.serviciosRepository.save(servicio);
+        }
+      }
     }
   }
 }
