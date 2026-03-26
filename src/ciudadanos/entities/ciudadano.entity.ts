@@ -32,8 +32,17 @@ export class Ciudadanos {
   @Column({ type: 'date', nullable: true })
   birth_date: Date;
 
+  @Column({ nullable: false })
+  address: string;  // Nuevo campo para almacenar la dirección del ciudadano
+
+  @Column({ nullable: false })
+  occupation: string;  // Nuevo campo para almacenar la ocupación del ciudadano
+
   @Column({ nullable: true })
   phone: string;
+
+  @Column({ nullable: true })
+  alternatePhone: string; // Nuevo campo para almacenar el teléfono alternativo del ciudadano
 
   @Column({ type: 'int', nullable: false })
   marital_status: MaritalStatus;
