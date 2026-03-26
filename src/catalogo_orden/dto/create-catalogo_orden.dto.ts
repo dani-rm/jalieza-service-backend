@@ -5,7 +5,7 @@ export class CreateCatalogoOrdenDto {
   @IsString()
   order_name: string;
 
-  @IsNotEmpty()
+/*   @IsNotEmpty()
   @IsNumber()
-  required_points: number;
+  required_points: number; */
 }

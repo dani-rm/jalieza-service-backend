@@ -3,8 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthController } from './auth/auth.controller';
-import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
@@ -12,8 +10,7 @@ import { ServiciosCiudadanosModule } from './servicios_ciudadanos/servicios_ciud
 import { CatalogoServiciosModule } from './catalogo_servicios/catalogo_servicios.module';
 import { CatalogoOrdenModule } from './catalogo_orden/catalogo_orden.module';
 import { RolModule } from './rol/rol.module';
-
-
+import { SeedingModule } from './seeding/seeding.module';
 
 @Module({
   imports: [
@@ -40,6 +37,7 @@ import { RolModule } from './rol/rol.module';
     CatalogoServiciosModule,
     CatalogoOrdenModule,
     RolModule,
+    SeedingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,9 +5,9 @@ export class CreateCatalogoServicioDto {
   @IsString()
   service_name: string;
 
-  @IsNotEmpty()
+  /* @IsNotEmpty()
   @IsString()
-  description: string;
+  description: string; */
 
   @IsNotEmpty()
   @IsNumber()

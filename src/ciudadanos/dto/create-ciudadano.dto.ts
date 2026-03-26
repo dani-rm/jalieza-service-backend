@@ -1,19 +1,19 @@
-import { Transform, Type } from "class-transformer";
-import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from "class-validator";
+import { Transform } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
+import { MaritalStatus } from '../enums/marital-status.enum';
+import { NameTransform } from '../../common/name.transform';
 
 export class CreateCiudadanoDto {
-  @IsOptional()
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
-  name?: string | null;
+  name: string;
+
+  @NameTransform()
+  @IsString()
+  last_name_father: string;
 
   @IsOptional()
-  @Transform(({ value }) => value?.trim?.())
-  @IsString()
-  last_name_father?: string | null;
-
-  @IsOptional()
-  @Transform(({ value }) => value?.trim?.())
+  @NameTransform()
   @IsString()
   last_name_mother?: string | null;
 
@@ -22,23 +22,36 @@ export class CreateCiudadanoDto {
   @IsString()
   comment?: string | null;
 
-@Transform(({ value }) => {
-  if (!value || value === '') return undefined;  // permite vacío
-  const date = new Date(value);
-  return isNaN(date.getTime()) ? undefined : date; // si no es fecha válida, undefined también
-})
-@Type(() => Date)
-@IsOptional()
-@IsDate()
-birth_date?: Date | null;
+  @NameTransform()
+  @IsString()
+  address: string;
+
+  @NameTransform()
+  @IsString()
+  occupation: string;
+
+  // Mantener el DTO como string (YYYY-MM-DD) para evitar problemas de zona horaria
+  // y parsear en el servicio como se hace en servicios_ciudadanos
+  @Transform(({ value }) => {
+    // Si es string vacío, null o undefined, retornar null
+    if (!value || value === '') return null;
+    return value;
+  })
+  @IsOptional()
+  @IsDateString()
+  birth_date?: string | null;
   @IsOptional()
   @Transform(({ value }) => value?.trim?.())
   @IsString()
   phone?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => value?.trim?.())
   @IsString()
-  marital_status?: string | null;
+  alternatePhone?: string | null;
+
+  @IsEnum(MaritalStatus)
+  marital_status: MaritalStatus;
 
   @IsOptional()
   @IsNumber()

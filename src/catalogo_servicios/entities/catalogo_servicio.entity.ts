@@ -25,8 +25,8 @@ export class CatalogoServicio {
   @JoinColumn({ name: 'orden_id' })
   order: CatalogoOrden;
 
-  @Column({ nullable: false })
-  description: string;
+  /* @Column({ nullable: false })
+  description: string; */
 
   @CreateDateColumn()
   created_at: Date;

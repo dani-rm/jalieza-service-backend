@@ -1,5 +1,6 @@
 import { CatalogoServicio } from "src/catalogo_servicios/entities/catalogo_servicio.entity";
 import { Ciudadanos } from "src/ciudadanos/entities/ciudadano.entity";
+import { ServiceStatus } from "../enums/service-status.enum";
 import {
   Column,
   CreateDateColumn,
@@ -7,15 +8,10 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   UpdateDateColumn,
   PrimaryGeneratedColumn,
 } from "typeorm";
-
-export enum TerminationStatus {
-  completed = 'completado',
-  in_progress = 'en_curso',
-  unfinished = 'inconcluso'
-}
 
 @Entity()
 export class ServiciosCiudadano {
@@ -27,27 +23,34 @@ export class ServiciosCiudadano {
   citizen: Ciudadanos;
 
   @ManyToOne(() => CatalogoServicio, { eager: true }) // Puedes poner eager: true o false
-@JoinColumn({ name: 'service_id' }) // 👈 Usa el mismo nombre que el campo existente
-catalogoServicio: CatalogoServicio;
+    
+  @JoinColumn({ name: 'service_id' }) // 👈 Usa el mismo nombre que el campo existente
+  catalogoServicio: CatalogoServicio;
 
-  @Column({ nullable: true })
+  @Column({ type: 'date', nullable: true })
   start_date: Date;
-@Column({ type: 'date', nullable: true })
-rest_period_end: Date; // o descanso_termina_en si prefieres en español
 
-  @Column({ nullable: true })
+  /* @Column({ type: 'date', nullable: true })
+  rest_period_end: Date; // o descanso_termina_en si prefieres en español */
+
+  @Column({ type: 'date', nullable: true })
   end_date: Date;
 
   @Column({
     nullable: true,
     type: 'enum',
-    enum: TerminationStatus,
-    default: TerminationStatus.completed,
+    enum: ServiceStatus,
+    default: ServiceStatus.completed,
   })
-  termination_status: TerminationStatus;
+  service_status: ServiceStatus;
 
   @Column({ nullable: true })
   observations: string;
+
+  // Enlace opcional a un servicio "pareado" (por matrimonio)
+  @OneToOne(() => ServiciosCiudadano, { nullable: true })
+  @JoinColumn({ name: 'paired_service_id' })
+  pairedWith?: ServiciosCiudadano | null;
 
   @CreateDateColumn()
   created_at: Date;

@@ -7,10 +7,10 @@ import { UpdateCatalogoOrdenDto } from './dto/update-catalogo_orden.dto';
 export class CatalogoOrdenController {
   constructor(private readonly catalogoOrdenService: CatalogoOrdenService) {}
 
-  @Post()
+  /* @Post()
   create(@Body() createCatalogoOrdenDto: CreateCatalogoOrdenDto) {
     return this.catalogoOrdenService.create(createCatalogoOrdenDto);
-  }
+  } */
 
   @Get()
   findAll() {
@@ -22,13 +22,13 @@ export class CatalogoOrdenController {
     return this.catalogoOrdenService.findOne(+id);
   }
 
-  @Patch(':id')
+ /*  @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoOrdenDto: UpdateCatalogoOrdenDto) {
     return this.catalogoOrdenService.update(+id, updateCatalogoOrdenDto);
-  }
+  } */
 
-  @Delete(':id')
+ /*  @Delete(':id')
   remove(@Param('id') id: string) {
     return this.catalogoOrdenService.remove(+id);
-  }
+  } */
 }
