@@ -440,7 +440,10 @@ export class CiudadanosService {
       comment: ciudadano.comment,
       birth_date: formatDateOnly(ciudadano.birth_date),
       age: calculateAge(ciudadano.birth_date),
+      address: ciudadano.address,
+      occupation: ciudadano.occupation,
       phone: ciudadano.phone,
+      alternatePhone: ciudadano.alternatePhone,
       marital_status: ciudadano.marital_status,
     };
   }
