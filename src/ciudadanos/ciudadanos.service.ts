@@ -62,17 +62,35 @@ export class CiudadanosService {
   }
 
   //Busca ciudadanos por nombre, apellido paterno, apellido materno
-  async searchCiudadanos(query: string, limit: number = 20) {
+  async searchCiudadanos(
+    query: string,
+    filter?: string,
+    limit: number = 20
+  ) {
     const sanitizedQuery = this.sanitizeSearchQuery(query);
     if (!sanitizedQuery) return [];
 
-    const ciudadanos = await this.ciudadanosRepository
+    const qb = this.ciudadanosRepository
       .createQueryBuilder('ciudadano')
+      .leftJoin('ciudadano.services', 'service') // 👈 IMPORTANTE
       .where(
-        'ciudadano.name ILIKE :query OR ciudadano.last_name_father ILIKE :query OR ciudadano.last_name_mother ILIKE :query',
+        `(
+        ciudadano.name ILIKE :query OR 
+        ciudadano.last_name_father ILIKE :query OR 
+        ciudadano.last_name_mother ILIKE :query
+      )`,
         { query: `%${sanitizedQuery}%` },
       )
-      .andWhere('ciudadano.deleted_at IS NULL')
+      .andWhere('ciudadano.deleted_at IS NULL');
+
+    // 🎯 FILTRO NUEVO
+    if (filter === 'conCargosRechazados') {
+      qb.andWhere('service.service_status = :status', {
+        status: 'rechazado',
+      });
+    }
+
+    const ciudadanos = await qb
       .select([
         'ciudadano.id',
         'ciudadano.name',
@@ -82,13 +100,20 @@ export class CiudadanosService {
         'ciudadano.birth_date',
         'ciudadano.phone',
         'ciudadano.comment',
+        'ciudadano.address',
+        'ciudadano.occupation',
+        'ciudadano.alternatePhone',
       ])
       .limit(Math.min(limit, 50))
       .getMany();
 
     return ciudadanos.map((c) => ({
       ...this.mapCiudadanoToBaseResponse(c),
-      full_name: this.buildFullName(c.name, c.last_name_father, c.last_name_mother),
+      full_name: this.buildFullName(
+        c.name,
+        c.last_name_father,
+        c.last_name_mother
+      ),
     }));
   }
 
