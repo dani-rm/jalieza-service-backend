@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 import { NameTransform } from '../../common/name.transform';
 
 export class SearchCiudadanoDto {
@@ -6,4 +6,8 @@ export class SearchCiudadanoDto {
   @MinLength(2, { message: 'La búsqueda debe tener al menos 2 caracteres' })
   @NameTransform()
   query: string;
+
+  @IsOptional()
+  @IsString()
+  filter?: string; // 👈 NUEVO
 }

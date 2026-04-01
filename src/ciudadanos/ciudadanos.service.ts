@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Ciudadanos } from './entities/ciudadano.entity';
 import { Repository } from 'typeorm';
 import { MaritalStatus } from './enums/marital-status.enum';
-import { CiudadanoResponse, CiudadanoListResponse, CiudadanoCreateResponse,CiudadanoUpdateResponse } from './interfaces/ciudadano-response.interface';
+import { CiudadanoResponse, CiudadanoListResponse, CiudadanoCreateResponse, CiudadanoUpdateResponse } from './interfaces/ciudadano-response.interface';
 import { calculateAge, formatDateOnly, validateBirthDate } from './utils/date-validator.util';
 import { MaritalStatusService } from './services/marital-status.service';
 import { CatalogoOrden } from 'src/catalogo_orden/entities/catalogo_orden.entity';
@@ -27,7 +27,7 @@ export class CiudadanosService {
     @InjectRepository(CatalogoOrden)
     private readonly catalogoOrdenRepository: Repository<CatalogoOrden>
     /* private readonly pointsManagementService: PointsManagementService, */
-  ) {}
+  ) { }
 
   //Valida si el ciudadano ya existe
   async checkDuplicate(checkDuplicateDto: CheckDuplicateCiudadanoDto) {
@@ -38,7 +38,7 @@ export class CiudadanosService {
         name,
         last_name_father,
         //la estructura ...(condición && { clave: valor }) agrega la clave solo si la condición es verdadera
-        ...(last_name_mother && { last_name_mother}),
+        ...(last_name_mother && { last_name_mother }),
       },
       withDeleted: false,
     });
@@ -47,50 +47,75 @@ export class CiudadanosService {
 
     return {
       isDuplicate,
-      existingCiudadano: isDuplicate 
-      ? this.mapCiudadanoToBaseResponse(existingCiudadano)
-      : null,
+      existingCiudadano: isDuplicate
+        ? this.mapCiudadanoToBaseResponse(existingCiudadano)
+        : null,
     };
   }
 
   //Obtiene los estados civiles
   getMaritalStatuses() {
     return [
-    MaritalStatus.SOLTERO,
-    MaritalStatus.CASADO,
-  ];
+      MaritalStatus.SOLTERO,
+      MaritalStatus.CASADO,
+    ];
   }
 
   //Busca ciudadanos por nombre, apellido paterno, apellido materno
-  async searchCiudadanos(query: string, limit: number = 20) {
-  const sanitizedQuery = this.sanitizeSearchQuery(query);
-  if (!sanitizedQuery) return [];
+  async searchCiudadanos(
+    query: string,
+    filter?: string,
+    limit: number = 20
+  ) {
+    const sanitizedQuery = this.sanitizeSearchQuery(query);
+    if (!sanitizedQuery) return [];
 
-  const ciudadanos = await this.ciudadanosRepository
-    .createQueryBuilder('ciudadano')
-    .where(
-      'ciudadano.name ILIKE :query OR ciudadano.last_name_father ILIKE :query OR ciudadano.last_name_mother ILIKE :query',
-      { query: `%${sanitizedQuery}%` },
-    )
-    .andWhere('ciudadano.deleted_at IS NULL')
-    .select([
-      'ciudadano.id',
-      'ciudadano.name',
-      'ciudadano.last_name_father',
-      'ciudadano.last_name_mother',
-      'ciudadano.marital_status',
-      'ciudadano.birth_date',
-      'ciudadano.phone',
-      'ciudadano.comment',
-    ])
-    .limit(Math.min(limit, 50))
-    .getMany();
+    const qb = this.ciudadanosRepository
+      .createQueryBuilder('ciudadano')
+      .leftJoin('ciudadano.services', 'service') // 👈 IMPORTANTE
+      .where(
+        `(
+        ciudadano.name ILIKE :query OR 
+        ciudadano.last_name_father ILIKE :query OR 
+        ciudadano.last_name_mother ILIKE :query
+      )`,
+        { query: `%${sanitizedQuery}%` },
+      )
+      .andWhere('ciudadano.deleted_at IS NULL');
 
-  return ciudadanos.map((c) => ({
-    ...this.mapCiudadanoToBaseResponse(c),
-    full_name: this.buildFullName(c.name, c.last_name_father, c.last_name_mother),
-  }));
-}
+    // 🎯 FILTRO NUEVO
+    if (filter === 'conCargosRechazados') {
+      qb.andWhere('service.service_status = :status', {
+        status: 'rechazado',
+      });
+    }
+
+    const ciudadanos = await qb
+      .select([
+        'ciudadano.id',
+        'ciudadano.name',
+        'ciudadano.last_name_father',
+        'ciudadano.last_name_mother',
+        'ciudadano.marital_status',
+        'ciudadano.birth_date',
+        'ciudadano.phone',
+        'ciudadano.comment',
+        'ciudadano.address',
+        'ciudadano.occupation',
+        'ciudadano.alternatePhone',
+      ])
+      .limit(Math.min(limit, 50))
+      .getMany();
+
+    return ciudadanos.map((c) => ({
+      ...this.mapCiudadanoToBaseResponse(c),
+      full_name: this.buildFullName(
+        c.name,
+        c.last_name_father,
+        c.last_name_mother
+      ),
+    }));
+  }
 
   //Registra un nuevo ciudadano
   async createCiudadano(dto: CreateCiudadanoDto): Promise<CiudadanoCreateResponse> {
@@ -100,7 +125,10 @@ export class CiudadanosService {
       last_name_mother,
       comment,
       birth_date,
+      address,
+      occupation,
       phone,
+      alternatePhone,
       marital_status,
       partner: partnerId,
     } = dto;
@@ -145,7 +173,10 @@ export class CiudadanosService {
       last_name_mother,
       comment,
       birth_date: localDate, // null si no hay fecha válida
+      address,
+      occupation,
       phone,
+      alternatePhone,
       marital_status,
       partner: partnerEntity,
     });
@@ -162,9 +193,9 @@ export class CiudadanosService {
     return {
       message: 'Ciudadano registrado exitosamente',
       data: {
-      ...this.mapCiudadanoToBaseResponse(saved),
-      partner: this.mapPartnerInfo(saved.partner),
-    },
+        ...this.mapCiudadanoToBaseResponse(saved),
+        partner: this.mapPartnerInfo(saved.partner),
+      },
     };
   }
 
@@ -190,7 +221,7 @@ export class CiudadanosService {
       throw new NotFoundException(`Citizen with id ${id} not found`);
     }
 
-     return this.mapCiudadanoToFullResponse(ciudadano, includeDeleted);
+    return this.mapCiudadanoToFullResponse(ciudadano, includeDeleted);
   }
 
   //Actualiza un ciudadano
@@ -215,7 +246,7 @@ export class CiudadanosService {
     if (newMaritalStatus !== undefined) {
       // ✅ VALIDAR antes del cambio
       this.maritalStatusService.validateMaritalStatusUpdate(newMaritalStatus, newPartnerId);
-      
+
       await this.maritalStatusService.handleMaritalStatusChange(
         ciudadano,
         newMaritalStatus,
@@ -239,23 +270,23 @@ export class CiudadanosService {
     const saved = await this.ciudadanosRepository.save(ciudadano);
 
     const response: CiudadanoResponse = {
-    ...this.mapCiudadanoToBaseResponse(saved),
-    partner: this.mapPartnerInfo(saved.partner),
-  };
+      ...this.mapCiudadanoToBaseResponse(saved),
+      partner: this.mapPartnerInfo(saved.partner),
+    };
 
-  return {
-    message: 'Ciudadano actualizado exitosamente',
-    data: response,
-  };
+    return {
+      message: 'Ciudadano actualizado exitosamente',
+      data: response,
+    };
   }
 
   //Elimina un ciudadano
   async remove(id: number) {
-    const ciudadano = await this.ciudadanosRepository.findOne({ 
+    const ciudadano = await this.ciudadanosRepository.findOne({
       where: { id },
       relations: ['partner'] // Incluir relación de pareja
     });
-    
+
     if (!ciudadano) {
       throw new NotFoundException(`Citizen with id ${id} not found`);
     }
@@ -268,7 +299,7 @@ export class CiudadanosService {
         MaritalStatus.SOLTERO,
         undefined // Sin nueva pareja
       );
-      
+
       // También actualizar el estado civil de la pareja que queda
       const pareja = ciudadano.partner;
       if (pareja && pareja.marital_status === MaritalStatus.CASADO) {
@@ -280,7 +311,7 @@ export class CiudadanosService {
 
     return await this.ciudadanosRepository.softRemove(ciudadano);
   }
-  
+
   // ✅ NUEVO: Promover ciudadano a siguiente orden
   async promoverOrden(ciudadanoId: number) {
     const ciudadano = await this.ciudadanosRepository.findOne({
@@ -383,13 +414,13 @@ export class CiudadanosService {
   //Restaura un ciudadano
   /* async restaurarCiudadano(id: number) {
     return await this.ciudadanosRepository.restore(id);
-  } */ 
+  } */
 
   // Obtener órdenes disponibles para un ciudadano ----------------------------------------------------------------------------------
-/*   async getOrdenesDisponibles(ciudadanoId: number) {
-    return await this.pointsManagementService.getOrdenesDisponibles(ciudadanoId);
-  }
- */
+  /*   async getOrdenesDisponibles(ciudadanoId: number) {
+      return await this.pointsManagementService.getOrdenesDisponibles(ciudadanoId);
+    }
+   */
   // Obtener puntos de un ciudadano (INCLUYE puntos de la pareja si está casado)
   /* async getPuntosCiudadano(ciudadanoId: number) {
     const [puntos, totalPuntos, ciudadano] = await Promise.all([
@@ -434,7 +465,10 @@ export class CiudadanosService {
       comment: ciudadano.comment,
       birth_date: formatDateOnly(ciudadano.birth_date),
       age: calculateAge(ciudadano.birth_date),
+      address: ciudadano.address,
+      occupation: ciudadano.occupation,
       phone: ciudadano.phone,
+      alternatePhone: ciudadano.alternatePhone,
       marital_status: ciudadano.marital_status,
     };
   }
@@ -444,7 +478,7 @@ export class CiudadanosService {
    */
   private mapPartnerInfo(partner: Ciudadanos | null): any {
     if (!partner) return null;
-    
+
     return {
       id: partner.id,
       name: partner.name,
@@ -481,7 +515,7 @@ export class CiudadanosService {
     if (!query?.trim() || query.trim().length < 2) {
       return null;
     }
-    
+
     // Escapar caracteres especiales de LIKE
     return query.trim().replace(/[%_]/g, '\\$&');
   }
@@ -490,7 +524,7 @@ export class CiudadanosService {
    * Mapea ciudadano completo con todas las relaciones
    */
   private mapCiudadanoToFullResponse(
-    ciudadano: Ciudadanos, 
+    ciudadano: Ciudadanos,
     includeDeleted: boolean = false
   ): CiudadanoListResponse {
     return {
@@ -511,7 +545,7 @@ export class CiudadanosService {
    */
   private parseDate(dateInput: string | Date): Date {
     if (!dateInput) return null;
-    
+
     // Si ya es Date, extraer componentes y reconstruir en hora local
     if (dateInput instanceof Date) {
       const year = dateInput.getFullYear();
@@ -519,12 +553,12 @@ export class CiudadanosService {
       const day = dateInput.getDate();
       return new Date(year, month, day);
     }
-    
+
     // Si es string con hora (ISO completo), usar directamente
     if (dateInput.includes('T')) {
       return new Date(dateInput);
     }
-    
+
     // Si es solo fecha (YYYY-MM-DD), construir Date en hora local
     const [year, month, day] = dateInput.split('-').map(Number);
     return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11

@@ -16,7 +16,7 @@ import { AuthGuard } from 'src/auth/guard/auth.guard';
 
 @Controller('ciudadanos')
 export class CiudadanosController {
-  constructor(private readonly ciudadanosService: CiudadanosService) {}
+  constructor(private readonly ciudadanosService: CiudadanosService) { }
 
   @Post()
   async create(@Body() createCiudadanoDto: CreateCiudadanoDto) {
@@ -30,7 +30,10 @@ export class CiudadanosController {
 
   @Post('search')
   searchCiudadanos(@Body() searchDto: SearchCiudadanoDto) {
-    return this.ciudadanosService.searchCiudadanos(searchDto.query);
+    return this.ciudadanosService.searchCiudadanos(
+      searchDto.query,
+      searchDto.filter, // 👈 nuevo
+    );
   }
 
   @Get()
@@ -68,15 +71,15 @@ export class CiudadanosController {
     return this.ciudadanosService.getOrdenesDisponiblesSimple(+id);
   }
 
- /*  @Get(':id/ordenes-disponibles')
-  getOrdenesDisponibles(@Param('id') id: string) {
-    return this.ciudadanosService.getOrdenesDisponibles(+id);
-  } */
+  /*  @Get(':id/ordenes-disponibles')
+   getOrdenesDisponibles(@Param('id') id: string) {
+     return this.ciudadanosService.getOrdenesDisponibles(+id);
+   } */
 
- /*  @Get(':id/puntos')
-  getPuntosCiudadano(@Param('id') id: string) {
-    return this.ciudadanosService.getPuntosCiudadano(+id);
-  } */
+  /*  @Get(':id/puntos')
+   getPuntosCiudadano(@Param('id') id: string) {
+     return this.ciudadanosService.getPuntosCiudadano(+id);
+   } */
 
   @Patch(':id')
   update(

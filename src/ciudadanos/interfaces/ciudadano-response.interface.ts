@@ -7,6 +7,9 @@ export interface CiudadanoResponse {
   birth_date?: string;
   age?: number;
   phone?: string;
+  address: string; // Se incluye en la respuesta la dirección del ciudadano
+  occupation: string; // Se incluye en la respuesta la ocupación del ciudadano
+  alternatePhone?: string; // Se incluye en la respuesta el teléfono alternativo del ciudadano
   marital_status: number;
   partner?: {
     id: number;

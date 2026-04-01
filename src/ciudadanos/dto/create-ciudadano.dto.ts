@@ -8,7 +8,7 @@ export class CreateCiudadanoDto {
   @IsString()
   name: string;
 
-  @NameTransform()  
+  @NameTransform()
   @IsString()
   last_name_father: string;
 
@@ -21,6 +21,14 @@ export class CreateCiudadanoDto {
   @Transform(({ value }) => value?.trim?.())
   @IsString()
   comment?: string | null;
+
+  @NameTransform()
+  @IsString()
+  address: string;
+
+  @NameTransform()
+  @IsString()
+  occupation: string;
 
   // Mantener el DTO como string (YYYY-MM-DD) para evitar problemas de zona horaria
   // y parsear en el servicio como se hace en servicios_ciudadanos
@@ -36,6 +44,11 @@ export class CreateCiudadanoDto {
   @Transform(({ value }) => value?.trim?.())
   @IsString()
   phone?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => value?.trim?.())
+  @IsString()
+  alternatePhone?: string | null;
 
   @IsEnum(MaritalStatus)
   marital_status: MaritalStatus;
